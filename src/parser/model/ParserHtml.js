@@ -1,10 +1,56 @@
-module.exports = config => {
+import { each, isString } from 'underscore';
+
+export default config => {
   var TEXT_NODE = 'span';
   var c = config;
   var modelAttrStart = 'data-gjs-';
 
   return {
     compTypes: '',
+
+    modelAttrStart,
+
+    /**
+     * Extract component props from an attribute object
+     * @param {Object} attr
+     * @returns {Object} An object containing props and attributes without them
+     */
+    splitPropsFromAttr(attr = {}) {
+      const props = {};
+      const attrs = {};
+
+      each(attr, (value, key) => {
+        if (key.indexOf(this.modelAttrStart) === 0) {
+          const modelAttr = key.replace(modelAttrStart, '');
+          const valueLen = value.length;
+          const valStr = value && isString(value);
+          const firstChar = valStr && value.substr(0, 1);
+          const lastChar = valStr && value.substr(valueLen - 1);
+          value = value === 'true' ? true : value;
+          value = value === 'false' ? false : value;
+
+          // Try to parse JSON where it's possible
+          // I can get false positive here (eg. a selector '[data-attr]')
+          // so put it under try/catch and let fail silently
+          try {
+            value =
+              (firstChar == '{' && lastChar == '}') ||
+              (firstChar == '[' && lastChar == ']')
+                ? JSON.parse(value)
+                : value;
+          } catch (e) {}
+
+          props[modelAttr] = value;
+        } else {
+          attrs[key] = value;
+        }
+      });
+
+      return {
+        props,
+        attrs
+      };
+    },
 
     /**
      * Parse style string to object
@@ -138,6 +184,11 @@ module.exports = config => {
 
             model[modelAttr] = nodeValue;
           } else {
+            // Check for attributes from props (eg. required, disabled)
+            if (nodeValue === '' && node[nodeName] === true) {
+              nodeValue = true;
+            }
+
             model.attributes[nodeName] = nodeValue;
           }
         }
@@ -151,7 +202,7 @@ module.exports = config => {
           // just make it content of the current node
           if (nodeChild === 1 && firstChild.nodeType === 3) {
             !model.type && (model.type = 'text');
-            model.content = firstChild.nodeValue;
+            model.components = firstChild.nodeValue;
           } else {
             model.components = this.parseNode(node);
           }
@@ -220,12 +271,13 @@ module.exports = config => {
      * @return {Object}
      */
     parse(str, parserCss) {
-      var config = (c.em && c.em.get('Config')) || {};
-      var res = { html: '', css: '' };
-      var el = document.createElement('div');
+      const { em } = c;
+      const config = (em && em.get('Config')) || {};
+      const res = { html: '', css: '' };
+      const el = document.createElement('div');
       el.innerHTML = str;
-      var scripts = el.querySelectorAll('script');
-      var i = scripts.length;
+      const scripts = el.querySelectorAll('script');
+      let i = scripts.length;
 
       // Remove all scripts
       if (!config.allowScripts) {
@@ -234,9 +286,9 @@ module.exports = config => {
 
       // Detach style tags and parse them
       if (parserCss) {
-        var styleStr = '';
-        var styles = el.querySelectorAll('style');
-        var j = styles.length;
+        const styles = el.querySelectorAll('style');
+        let j = styles.length;
+        let styleStr = '';
 
         while (j--) {
           styleStr = styles[j].innerHTML + styleStr;
@@ -246,11 +298,12 @@ module.exports = config => {
         if (styleStr) res.css = parserCss.parse(styleStr);
       }
 
-      var result = this.parseNode(el);
-
-      if (result.length == 1) result = result[0];
-
-      res.html = result;
+      const result = this.parseNode(el);
+      // I have to keep it otherwise it breaks the DomComponents.addComponent (returns always array)
+      const resHtml =
+        result.length === 1 && !c.returnArray ? result[0] : result;
+      res.html = resHtml;
+      em && em.trigger('parse:html', { input: str, output: res });
 
       return res;
     }

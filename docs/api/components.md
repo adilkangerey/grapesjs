@@ -119,6 +119,7 @@ as 'domComponents.getComponents().add(...)'
     -   `component.content` **[string][15]** String inside component (optional, default `''`)
     -   `component.style` **[Object][12]** Style object (optional, default `{}`)
     -   `component.attributes` **[Object][12]** Attribute object (optional, default `{}`)
+-   `opt` **[Object][12]** the options object to be used by the [Components.add][getComponents][3] method (optional, default `{}`)
 
 ### Examples
 
@@ -175,6 +176,17 @@ Read more about this in [Define New Component][17]
 
 Returns **[Object][12]** Component type defintion, eg. `{ model: ..., view: ... }`
 
+## removeType
+
+Remove component type
+
+### Parameters
+
+-   `id`  
+-   `type` **[string][15]** Component ID
+
+Returns **([Object][12] \| [undefined][18])** Removed component type, undefined otherwise
+
 ## getTypes
 
 Return the array of all types
@@ -214,3 +226,5 @@ Returns **[Array][14]**
 [16]: https://developer.mozilla.org/docs/Web/HTML/Element
 
 [17]: https://grapesjs.com/docs/modules/Components.html#define-new-component
+
+[18]: https://developer.mozilla.org/docs/Web/JavaScript/Reference/Global_Objects/undefined

@@ -1,9 +1,16 @@
-const InputColor = require('domain_abstract/ui/InputColor');
+import PropertyIntegerView from './PropertyIntegerView';
+import InputColor from 'domain_abstract/ui/InputColor';
 
-module.exports = require('./PropertyIntegerView').extend({
+export default PropertyIntegerView.extend({
   setValue(value, opts = {}) {
     opts = { ...opts, silent: 1 };
     this.inputInst.setValue(value, opts);
+  },
+
+  remove() {
+    PropertyIntegerView.prototype.remove.apply(this, arguments);
+    this.inputInst.remove();
+    ['inputInst', '$color'].forEach(i => (this[i] = {}));
   },
 
   onRender() {

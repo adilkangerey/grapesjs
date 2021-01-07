@@ -1,5 +1,15 @@
-const Sector = require('./Sector');
+import Backbone from 'backbone';
+import Sector from './Sector';
 
-module.exports = require('backbone').Collection.extend({
-  model: Sector
+export default Backbone.Collection.extend({
+  model: Sector,
+
+  initialize() {
+    this.listenTo(this, 'reset', this.onReset);
+  },
+
+  onReset(models, opts = {}) {
+    const prev = opts.previousModels || [];
+    prev.forEach(sect => sect.get('properties').reset());
+  }
 });

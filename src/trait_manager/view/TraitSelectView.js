@@ -1,14 +1,18 @@
+import Backbone from 'backbone';
 import { isString, isUndefined } from 'underscore';
-const TraitView = require('./TraitView');
-const $ = require('backbone').$;
+import TraitView from './TraitView';
 
-module.exports = TraitView.extend({
-  initialize(o) {
-    TraitView.prototype.initialize.apply(this, arguments);
-    const { ppfx, inputhClass, fieldClass, model } = this;
-    this.listenTo(model, 'change:options', this.render);
-    this.tmpl = `<div class="${fieldClass}">
-      <div class="${inputhClass}"></div>
+const $ = Backbone.$;
+
+export default TraitView.extend({
+  init() {
+    this.listenTo(this.model, 'change:options', this.rerender);
+  },
+
+  templateInput() {
+    const { ppfx, clsField } = this;
+    return `<div class="${clsField}">
+      <div data-input></div>
       <div class="${ppfx}sel-arrow">
         <div class="${ppfx}d-s-arrow"></div>
       </div>
@@ -22,8 +26,10 @@ module.exports = TraitView.extend({
    */
   getInputEl() {
     if (!this.$input) {
-      const { model } = this;
+      const { model, em } = this;
+      const propName = model.get('name');
       const opts = model.get('options') || [];
+      const values = [];
       let input = '<select>';
 
       opts.forEach(el => {
@@ -34,20 +40,25 @@ module.exports = TraitView.extend({
           name = el;
           value = el;
         } else {
-          name = el.name ? el.name : el.value;
-          value = `${el.value || el.id}`.replace(/"/g, '&quot;');
+          name = el.name || el.label || el.value;
+          value = `${isUndefined(el.value) ? el.id : el.value}`.replace(
+            /"/g,
+            '&quot;'
+          );
           style = el.style ? el.style.replace(/"/g, '&quot;') : '';
           attrs += style ? ` style="${style}"` : '';
         }
-
-        input += `<option value="${value}"${attrs}>${name}</option>`;
+        const resultName =
+          em.t(`traitManager.traits.options.${propName}.${value}`) || name;
+        input += `<option value="${value}"${attrs}>${resultName}</option>`;
+        values.push(value);
       });
 
       input += '</select>';
-      this.input = input;
       this.$input = $(input);
-      let val = model.get('value') || model.getTargetValue();
-      !isUndefined(val) && this.$input.val(val);
+      const val = model.getTargetValue();
+      const valResult = values.indexOf(val) >= 0 ? val : model.get('default');
+      !isUndefined(valResult) && this.$input.val(valResult);
     }
 
     return this.$input.get(0);

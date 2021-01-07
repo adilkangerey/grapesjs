@@ -1,8 +1,9 @@
-module.exports = () => {
-  let conf = {},
-    defaults = require('./config/config'),
-    parserCss = require('./model/ParserCss'),
-    parserHtml = require('./model/ParserHtml');
+import defaults from './config/config';
+import parserCss from './model/ParserCss';
+import parserHtml from './model/ParserHtml';
+
+export default () => {
+  let conf = {};
   let pHtml, pCss;
 
   return {
@@ -71,6 +72,11 @@ module.exports = () => {
      */
     parseCss(str) {
       return pCss.parse(str);
+    },
+
+    destroy() {
+      [conf, pHtml, pCss].forEach(i => (i = {}));
+      ['em', 'parserCss', 'parserHtml'].forEach(i => (this[i] = {}));
     }
   };
 };

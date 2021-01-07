@@ -1,7 +1,8 @@
-var Backbone = require('backbone');
-var ButtonView = require('./ButtonView');
+import Backbone from 'backbone';
+import ButtonView from './ButtonView';
+import { result } from 'underscore';
 
-module.exports = Backbone.View.extend({
+export default Backbone.View.extend({
   initialize(o) {
     this.opt = o || {};
     this.config = this.opt.config || {};
@@ -30,15 +31,16 @@ module.exports = Backbone.View.extend({
    * @return Object Object created
    * */
   addToCollection(model, fragmentEl) {
-    var fragment = fragmentEl || null;
-    var viewObject = ButtonView;
-
-    var view = new viewObject({
+    const fragment = fragmentEl || null;
+    const viewObject = ButtonView;
+    const el = model.get('el');
+    const view = new viewObject({
+      el,
       model,
       config: this.config,
       parentM: this.parentM
     });
-    var rendered = view.render().el;
+    const rendered = view.render().el;
 
     if (fragment) {
       fragment.appendChild(rendered);
@@ -58,7 +60,7 @@ module.exports = Backbone.View.extend({
     }, this);
 
     this.$el.append(fragment);
-    this.$el.attr('class', _.result(this, 'className'));
+    this.$el.attr('class', result(this, 'className'));
     return this;
   }
 });
