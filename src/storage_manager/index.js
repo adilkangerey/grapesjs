@@ -32,18 +32,19 @@
  * @module StorageManager
  */
 
-module.exports = () => {
-  var c = {},
-    defaults = require('./config/config'),
-    LocalStorage = require('./model/LocalStorage'),
-    RemoteStorage = require('./model/RemoteStorage');
+import defaults from './config/config';
+import LocalStorage from './model/LocalStorage';
+import RemoteStorage from './model/RemoteStorage';
 
+const eventStart = 'storage:start';
+const eventEnd = 'storage:end';
+const eventError = 'storage:error';
+
+export default () => {
+  var c = {};
   let em;
   var storages = {};
   var defaultStorages = {};
-  const eventStart = 'storage:start';
-  const eventEnd = 'storage:end';
-  const eventError = 'storage:error';
 
   return {
     /**
@@ -262,6 +263,7 @@ module.exports = () => {
             this.onEnd('load', result);
           },
           err => {
+            clb && clb(result);
             this.onError('load', err);
           }
         );
@@ -330,6 +332,10 @@ module.exports = () => {
     canAutoload() {
       const storage = this.getCurrentStorage();
       return storage && this.getConfig().autoload;
+    },
+
+    destroy() {
+      [c, em, storages, defaultStorages].forEach(i => (i = {}));
     }
   };
 };

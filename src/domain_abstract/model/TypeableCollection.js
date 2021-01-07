@@ -1,4 +1,6 @@
 import { isFunction } from 'underscore';
+import Backbone from 'backbone';
+
 const Model = Backbone.Model;
 const View = Backbone.View;
 
@@ -121,6 +123,11 @@ export default {
       view instanceof View || isFunction(view)
         ? view
         : ViewInst.extend(view || {});
+
+    // New API
+    if (this.extendViewApi && !definition.model && !definition.view) {
+      view = view.extend(definition);
+    }
 
     if (type) {
       type.model = model;

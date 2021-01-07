@@ -1,9 +1,11 @@
-var Backbone = require('backbone');
+import Backbone from 'backbone';
+import { result, forEach, keys } from 'underscore';
 
 const TYPE_CLASS = 1;
 const TYPE_ID = 2;
+const { Model } = Backbone;
 
-const Selector = Backbone.Model.extend(
+const Selector = Model.extend(
   {
     idAttribute: 'name',
 
@@ -26,7 +28,8 @@ const Selector = Backbone.Model.extend(
       protected: false
     },
 
-    initialize() {
+    initialize(props, opts = {}) {
+      const { config = {} } = opts;
       const name = this.get('name');
       const label = this.get('label');
 
@@ -36,14 +39,22 @@ const Selector = Backbone.Model.extend(
         this.set('label', name);
       }
 
-      this.set('name', Selector.escapeName(this.get('name')));
+      const namePreEsc = this.get('name');
+      const { escapeName } = config;
+      const nameEsc = escapeName
+        ? escapeName(namePreEsc)
+        : Selector.escapeName(namePreEsc);
+      this.set('name', nameEsc);
+      this.em = config.em;
     },
 
     /**
      * Get full selector name
      * @return {string}
      */
-    getFullName() {
+    getFullName(opts = {}) {
+      const { escape } = opts;
+      const name = this.get('name');
       let init = '';
 
       switch (this.get('type')) {
@@ -55,7 +66,37 @@ const Selector = Backbone.Model.extend(
           break;
       }
 
-      return init + this.get('name');
+      return init + (escape ? escape(name) : name);
+    },
+
+    toJSON(opts = {}) {
+      const { em } = this;
+      let obj = Model.prototype.toJSON.call(this, [opts]);
+      const defaults = result(this, 'defaults');
+
+      if (em && em.getConfig('avoidDefaults')) {
+        forEach(defaults, (value, key) => {
+          if (obj[key] === value) {
+            delete obj[key];
+          }
+        });
+
+        if (obj.label === obj.name) {
+          delete obj.label;
+        }
+
+        const objLen = keys(obj).length;
+
+        if (objLen === 1 && obj.name) {
+          obj = obj.name;
+        }
+
+        if (objLen === 2 && obj.name && obj.type) {
+          obj = this.getFullName();
+        }
+      }
+
+      return obj;
     }
   },
   {
@@ -77,4 +118,4 @@ const Selector = Backbone.Model.extend(
   }
 );
 
-module.exports = Selector;
+export default Selector;

@@ -1,9 +1,8 @@
 import { defaults, isElement } from 'underscore';
+import defaultOpts from './config/config';
+import TraitsView from './view/TraitsView';
 
-const defaultOpts = require('./config/config');
-const TraitsView = require('./view/TraitsView');
-
-module.exports = () => {
+export default () => {
   let c = {};
   let TraitsViewer;
 
@@ -82,6 +81,11 @@ module.exports = () => {
 
     render() {
       return TraitsViewer.render().el;
+    },
+
+    destroy() {
+      TraitsViewer.remove();
+      [c, TraitsViewer].forEach(i => (i = {}));
     }
   };
 };

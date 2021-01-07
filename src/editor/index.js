@@ -19,7 +19,7 @@
  *
  * ### Components
  * * `component:create` - Component is created (only the model, is not yet mounted in the canvas), called after the init() method
- * * `component:mount` - Component is monted to an element and rendered in canvas
+ * * `component:mount` - Component is mounted to an element and rendered in canvas
  * * `component:add` - Triggered when a new component is added to the editor, the model is passed as an argument to the callback
  * * `component:remove` - Triggered when a component is removed, the model is passed as an argument to the callback
  * * `component:clone` - Triggered when a component is cloned, the new model is passed as an argument to the callback
@@ -32,6 +32,9 @@
  * * `component:toggled` - Component selection changed, toggled model is passed as an argument to the callback
  * * `component:type:add` - New component type added, the new type is passed as an argument to the callback
  * * `component:type:update` - Component type updated, the updated type is passed as an argument to the callback
+ * * `component:drag:start` - Component drag started. Passed an object, to the callback, containing the `target` (component to drag), `parent` (parent of the component) and `index` (component index in the parent)
+ * * `component:drag` - During component drag. Passed the same object as in `component:drag:start` event, but in this case, `parent` and `index` are updated by the current pointer
+ * * `component:drag:end` - Component drag ended. Passed the same object as in `component:drag:start` event, but in this case, `parent` and `index` are updated by the final pointer
  * ### Blocks
  * * `block:add` - New block added
  * * `block:remove` - Block removed
@@ -74,19 +77,27 @@
  * * `canvas:dragdata` - On any dataTransfer parse, `DataTransfer` instance and the `result` are passed as arguments.
  *  By changing `result.content` you're able to customize what is dropped
  * ### Selectors
- * * `selector:add` - Triggers when a new selector/class is created
+ * * `selector:add` - New selector is add. Passes the new selector as an argument
+ * * `selector:remove` - Selector removed. Passes the removed selector as an argument
+ * * `selector:update` - Selector updated. Passes the updated selector as an argument
+ * * `selector:state` - State changed. Passes the new state value as an argument
  * ### RTE
  * * `rte:enable` - RTE enabled. The view, on which RTE is enabled, is passed as an argument
  * * `rte:disable` - RTE disabled. The view, on which RTE is disabled, is passed as an argument
  * ### Modal
  * * `modal:open` - Modal is opened
  * * `modal:close` - Modal is closed
+ * ### Parser
+ * * `parse:html` - On HTML parse, an object containing the input and the output of the parser is passed as an argument
+ * * `parse:css` - On CSS parse, an object containing the input and the output of the parser is passed as an argument
  * ### Commands
  * * `run:{commandName}` - Triggered when some command is called to run (eg. editor.runCommand('preview'))
  * * `stop:{commandName}` - Triggered when some command is called to stop (eg. editor.stopCommand('preview'))
  * * `run:{commandName}:before` - Triggered before the command is called
  * * `stop:{commandName}:before` - Triggered before the command is called to stop
  * * `abort:{commandName}` - Triggered when the command execution is aborted (`editor.on(`run:preview:before`, opts => opts.abort = 1);`)
+ * * `run` - Triggered on run of any command. The id and the result are passed as arguments to the callback
+ * * `stop` - Triggered on stop of any command. The id and the result are passed as arguments to the callback
  * ### General
  * * `canvasScroll` - Canvas is scrolled
  * * `update` - The structure of the template is updated (its HTML/CSS)
@@ -97,11 +108,11 @@
  * @module Editor
  */
 import $ from 'cash-dom';
+import defaults from './config/config';
+import EditorModel from './model/Editor';
+import EditorView from './view/EditorView';
 
 export default (config = {}) => {
-  const defaults = require('./config/config');
-  const EditorModel = require('./model/Editor');
-  const EditorView = require('./view/EditorView');
   const c = {
     ...defaults,
     ...config
@@ -124,138 +135,63 @@ export default (config = {}) => {
     editor: em,
 
     /**
-     * @property {DomComponents}
-     * @private
-     */
-    DomComponents: em.get('DomComponents'),
-
-    /**
-     * @property {LayerManager}
-     * @private
-     */
-    LayerManager: em.get('LayerManager'),
-
-    /**
-     * @property {CssComposer}
-     * @private
-     */
-    CssComposer: em.get('CssComposer'),
-
-    /**
-     * @property {StorageManager}
-     * @private
-     */
-    StorageManager: em.get('StorageManager'),
-
-    /**
-     * @property {AssetManager}
-     * @private
-     */
-    AssetManager: em.get('AssetManager'),
-
-    /**
-     * @property {BlockManager}
-     * @private
-     */
-    BlockManager: em.get('BlockManager'),
-
-    /**
-     * @property {TraitManager}
-     * @private
-     */
-    TraitManager: em.get('TraitManager'),
-
-    /**
-     * @property {SelectorManager}
-     * @private
-     */
-    SelectorManager: em.get('SelectorManager'),
-
-    /**
-     * @property {CodeManager}
-     * @private
-     */
-    CodeManager: em.get('CodeManager'),
-
-    /**
-     * @property {Commands}
-     * @private
-     */
-    Commands: em.get('Commands'),
-
-    /**
-     * @property {Keymaps}
-     * @private
-     */
-    Keymaps: em.get('Keymaps'),
-
-    /**
-     * @property {Modal}
-     * @private
-     */
-    Modal: em.get('Modal'),
-
-    /**
-     * @property {Panels}
-     * @private
-     */
-    Panels: em.get('Panels'),
-
-    /**
-     * @property {StyleManager}
-     * @private
-     */
-    StyleManager: em.get('StyleManager'),
-
-    /**
-     * @property {Canvas}
-     * @private
-     */
-    Canvas: em.get('Canvas'),
-
-    /**
-     * @property {UndoManager}
-     * @private
-     */
-    UndoManager: em.get('UndoManager'),
-
-    /**
-     * @property {DeviceManager}
-     * @private
-     */
-    DeviceManager: em.get('DeviceManager'),
-
-    /**
-     * @property {RichTextEditor}
-     * @private
-     */
-    RichTextEditor: em.get('RichTextEditor'),
-
-    /**
-     * @property {Parser}
-     * @private
-     */
-    Parser: em.get('Parser'),
-
-    /**
-     * @property {Utils}
-     * @private
-     */
-    Utils: em.get('Utils'),
-
-    /**
-     * @property {Utils}
-     * @private
-     */
-    Config: em.get('Config'),
-
-    /**
      * Initialize editor model
      * @return {this}
      * @private
      */
-    init() {
-      em.init(this);
+    init(opts = {}) {
+      em.init(this, { ...c, ...opts });
+
+      [
+        'I18n',
+        'Utils',
+        'Config',
+        'Commands',
+        'Keymaps',
+        'Modal',
+        'Panels',
+        'Canvas',
+        'Parser',
+        'CodeManager',
+        'UndoManager',
+        'RichTextEditor',
+        'DomComponents',
+        ['Components', 'DomComponents'],
+        'LayerManager',
+        ['Layers', 'LayerManager'],
+        'CssComposer',
+        ['Css', 'CssComposer'],
+        'StorageManager',
+        ['Storage', 'StorageManager'],
+        'AssetManager',
+        ['Assets', 'AssetManager'],
+        'BlockManager',
+        ['Blocks', 'BlockManager'],
+        'TraitManager',
+        ['Traits', 'TraitManager'],
+        'SelectorManager',
+        ['Selectors', 'SelectorManager'],
+        'StyleManager',
+        ['Styles', 'StyleManager'],
+        'DeviceManager',
+        ['Devices', 'DeviceManager']
+      ].forEach(prop => {
+        if (Array.isArray(prop)) {
+          this[prop[0]] = em.get(prop[1]);
+        } else {
+          this[prop] = em.get(prop);
+        }
+      });
+
+      // Do post render stuff after the iframe is loaded otherwise it'll
+      // be empty during tests
+      em.on('loaded', () => {
+        this.UndoManager.clear();
+        em.get('modules').forEach(module => {
+          module.postRender && module.postRender(editorView);
+        });
+      });
+
       return this;
     },
 
@@ -280,6 +216,7 @@ export default (config = {}) => {
     /**
      * Returns CSS built inside canvas
      * @param {Object} [opts={}] Options
+     * @param {Boolean} [opts.avoidProtected=false] Don't include protected CSS
      * @return {string} CSS string
      */
     getCss(opts) {
@@ -313,6 +250,7 @@ export default (config = {}) => {
     /**
      * Set components inside editor's canvas. This method overrides actual components
      * @param {Array<Object>|Object|string} components HTML string or components model
+     * @param {Object} opt the options object to be used by the [setComponents]{@link em#setComponents} method
      * @return {this}
      * @example
      * editor.setComponents('<div class="cls">New component</div>');
@@ -323,8 +261,8 @@ export default (config = {}) => {
      *   content: 'New component'
      * });
      */
-    setComponents(components) {
-      em.setComponents(components);
+    setComponents(components, opt = {}) {
+      em.setComponents(components, opt);
       return this;
     },
 
@@ -335,7 +273,7 @@ export default (config = {}) => {
      * @param {Boolean} [opts.avoidUpdateStyle=false] If the HTML string contains styles,
      * by default, they will be created and, if already exist, updated. When this option
      * is true, styles already created will not be updated.
-     * @return {Model|Array<Model>}
+     * @return {Array<Component>}
      * @example
      * editor.addComponents('<div class="cls">New component</div>');
      * // or
@@ -346,7 +284,7 @@ export default (config = {}) => {
      * });
      */
     addComponents(components, opts) {
-      return this.getComponents().add(components, opts);
+      return this.getWrapper().append(components, opts);
     },
 
     /**
@@ -360,6 +298,7 @@ export default (config = {}) => {
     /**
      * Set style inside editor's canvas. This method overrides actual style
      * @param {Array<Object>|Object|string} style CSS string or style model
+     * @param {Object} opt the options object to be used by the [setStyle]{@link em#setStyle} method
      * @return {this}
      * @example
      * editor.setStyle('.cls{color: red}');
@@ -369,8 +308,8 @@ export default (config = {}) => {
      *   style: { color: 'red' }
      * });
      */
-    setStyle(style) {
-      em.setStyle(style);
+    setStyle(style, opt = {}) {
+      em.setStyle(style, opt);
       return this;
     },
 
@@ -409,6 +348,8 @@ export default (config = {}) => {
     /**
      * Select a component
      * @param  {Component|HTMLElement} el Component to select
+     * @param  {Object} [opts] Options
+     * @param  {Boolean} [opts.scroll] Scroll canvas to the selected element
      * @return {this}
      * @example
      * // Select dropped block
@@ -416,8 +357,8 @@ export default (config = {}) => {
      *  editor.select(model);
      * });
      */
-    select(el) {
-      em.setSelected(el);
+    select(el, opts) {
+      em.setSelected(el, opts);
       return this;
     },
 
@@ -543,17 +484,16 @@ export default (config = {}) => {
     },
 
     /**
-     * Update editor dimensions and refresh data useful for positioning of tools
+     * Update editor dimension offsets
      *
      * This method could be useful when you update, for example, some position
      * of the editor element (eg. canvas, panels, etc.) with CSS, where without
-     * refresh you'll get misleading position of tools (eg. rich text editor,
-     * component highlighter, etc.)
-     *
-     * @private
+     * refresh you'll get misleading position of tools
+     * @param {Object} [options] Options
+     * @param {Boolean} [options.tools=false] Update the position of tools (eg. rich text editor, component highlighter, etc.)
      */
-    refresh() {
-      em.refreshCanvas();
+    refresh(opts) {
+      em.refreshCanvas(opts);
     },
 
     /**
@@ -614,6 +554,17 @@ export default (config = {}) => {
     },
 
     /**
+     * Change the global drag mode of components.
+     * To get more about this feature read: https://github.com/artf/grapesjs/issues/1936
+     * @param {String} value Drag mode, options: 'absolute' | 'translate'
+     * @returns {this}
+     */
+    setDragMode(value) {
+      em.setDragMode(value);
+      return this;
+    },
+
+    /**
      * Trigger event log message
      * @param  {*} msg Message to log
      * @param  {Object} [opts={}] Custom options
@@ -631,6 +582,24 @@ export default (config = {}) => {
     log(msg, opts = {}) {
       em.log(msg, opts);
       return this;
+    },
+
+    /**
+     * Translate label
+     * @param {String} key Label to translate
+     * @param {Object} [opts] Options for the translation
+     * @param {Object} [opts.params] Params for the translation
+     * @param {Boolean} [opts.noWarn] Avoid warnings in case of missing resources
+     * @returns {String}
+     * @example
+     * editor.t('msg');
+     * // use params
+     * editor.t('msg2', { params: { test: 'hello' } });
+     * // custom local
+     * editor.t('msg2', { params: { test: 'hello' }, l: 'it' });
+     */
+    t(...args) {
+      return em.t(...args);
     },
 
     /**
@@ -706,15 +675,6 @@ export default (config = {}) => {
      * @return {HTMLElement}
      */
     render() {
-      // Do post render stuff after the iframe is loaded otherwise it'll
-      // be empty during tests
-      em.on('loaded', () => {
-        this.UndoManager.clear();
-        em.get('modules').forEach(module => {
-          module.postRender && module.postRender(editorView);
-        });
-      });
-
       editorView.render();
       return editorView.el;
     }

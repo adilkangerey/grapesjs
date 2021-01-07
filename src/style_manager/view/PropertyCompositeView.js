@@ -1,8 +1,9 @@
 import Backbone from 'backbone';
-const PropertyView = require('./PropertyView');
+import PropertyView from './PropertyView';
+
 const $ = Backbone.$;
 
-module.exports = PropertyView.extend({
+export default PropertyView.extend({
   templateInput() {
     const pfx = this.pfx;
     return `
@@ -24,6 +25,12 @@ module.exports = PropertyView.extend({
     const props = this.properties;
     props && props.forEach(propView => propView.clear());
     PropertyView.prototype.clear.apply(this, arguments);
+  },
+
+  remove() {
+    this.model.get('properties').reset();
+    PropertyView.prototype.remove.apply(this, arguments);
+    ['properties', 'props', '$props'].forEach(i => (this[i] = {}));
   },
 
   /**
@@ -55,7 +62,7 @@ module.exports = PropertyView.extend({
           prop.parent = model;
         }, this);
 
-        var PropertiesView = require('./PropertiesView');
+        var PropertiesView = require('./PropertiesView').default;
         var propsView = new PropertiesView(this.getPropsConfig());
         this.$props = propsView.render().$el;
         this.properties = propsView.properties;
@@ -74,7 +81,7 @@ module.exports = PropertyView.extend({
     const model = this.model;
 
     var result = {
-      config: this.config,
+      config: { ...this.config, highlightComputed: 0 },
       collection: this.props,
       target: this.target,
       propTarget: this.propTarget,
@@ -116,10 +123,6 @@ module.exports = PropertyView.extend({
     } else {
       value =
         view && view.getTargetValue({ ignoreCustomValue: 1, ignoreDefault: 1 });
-    }
-
-    if (view) {
-      value = view.model.parseValue(value).value;
     }
 
     return value;

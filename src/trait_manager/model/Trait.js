@@ -1,6 +1,7 @@
+import Backbone from 'backbone';
 import { isUndefined } from 'underscore';
 
-module.exports = require('backbone').Model.extend({
+export default Backbone.Model.extend({
   defaults: {
     type: 'text', // text, number, range, select
     label: '',
@@ -21,6 +22,7 @@ module.exports = require('backbone').Model.extend({
     const target = this.get('target');
     const name = this.get('name');
     const changeProp = this.get('changeProp');
+    !this.get('id') && this.set('id', name);
 
     if (target) {
       this.target = target;
@@ -30,6 +32,14 @@ module.exports = require('backbone').Model.extend({
         : `change:attributes:${name}`;
       this.listenTo(target, targetEvent, this.targetUpdated);
     }
+  },
+
+  /**
+   * Return all the propeties
+   * @returns {Object}
+   */
+  props() {
+    return this.attributes;
   },
 
   targetUpdated() {
@@ -55,12 +65,19 @@ module.exports = require('backbone').Model.extend({
     const target = this.target;
     const name = this.get('name');
     if (isUndefined(value)) return;
+    let valueToSet = value;
+
+    if (value === 'false') {
+      valueToSet = false;
+    } else if (value === 'true') {
+      valueToSet = true;
+    }
 
     if (this.get('changeProp')) {
-      target.set(name, value, opts);
+      target.set(name, valueToSet, opts);
     } else {
       const attrs = { ...target.get('attributes') };
-      attrs[name] = value;
+      attrs[name] = valueToSet;
       target.set('attributes', attrs, opts);
     }
   },

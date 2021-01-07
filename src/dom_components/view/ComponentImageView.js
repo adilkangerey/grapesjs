@@ -1,15 +1,15 @@
 import { isString } from 'underscore';
-const ComponentView = require('./ComponentView');
+import ComponentView from './ComponentView';
 
-module.exports = ComponentView.extend({
+export default ComponentView.extend({
   tagName: 'img',
 
   events: {
     dblclick: 'onActive',
     click: 'initResize',
     error: 'onError',
-    dragstart: 'noDrag',
-    mousedown: 'noDrag'
+    load: 'onLoad',
+    dragstart: 'noDrag'
   },
 
   initialize(o) {
@@ -27,6 +27,7 @@ module.exports = ComponentView.extend({
    * Fetch file if exists
    */
   fetchFile() {
+    if (this.modelOpt.temporary) return;
     const model = this.model;
     const file = model.get('file');
 
@@ -84,6 +85,11 @@ module.exports = ComponentView.extend({
   onError() {
     const fallback = this.model.getSrcResult({ fallback: 1 });
     if (fallback) this.el.src = fallback;
+  },
+
+  onLoad() {
+    // Used to update component tools box (eg. toolbar, resizer) once the image is loaded
+    this.em.trigger('change:canvasOffset');
   },
 
   noDrag(ev) {

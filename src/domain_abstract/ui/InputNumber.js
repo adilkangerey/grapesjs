@@ -1,16 +1,18 @@
-import { bindAll, isUndefined } from 'underscore';
+import Backbone from 'backbone';
+import { bindAll, isUndefined, indexOf } from 'underscore';
 import { on, off } from 'utils/mixins';
-const Input = require('./Input');
-const Backbone = require('backbone');
+import Input from './Input';
+
 const $ = Backbone.$;
 
-module.exports = Input.extend({
+export default Input.extend({
   events: {
     'change input': 'handleChange',
     'change select': 'handleUnitChange',
     'click [data-arrow-up]': 'upArrowClick',
     'click [data-arrow-down]': 'downArrowClick',
-    'mousedown [data-arrows]': 'downIncrement'
+    'mousedown [data-arrows]': 'downIncrement',
+    keydown: 'handleKeyDown'
   },
 
   template() {
@@ -81,6 +83,21 @@ module.exports = Input.extend({
   },
 
   /**
+   * Handled when user uses keyboard
+   */
+  handleKeyDown(e) {
+    if (e.key === 'ArrowUp') {
+      e.preventDefault();
+      this.upArrowClick();
+    }
+
+    if (e.key === 'ArrowDown') {
+      e.preventDefault();
+      this.downArrowClick();
+    }
+  },
+
+  /**
    * Fired when the element of the property is updated
    */
   elementUpdated() {
@@ -131,7 +148,7 @@ module.exports = Input.extend({
   upArrowClick() {
     const model = this.model;
     const step = model.get('step');
-    let value = parseInt(model.get('value'), 10);
+    let value = parseFloat(model.get('value'));
     value = this.normalizeValue(value + step);
     var valid = this.validateInputValue(value);
     model.set('value', valid.value);
@@ -144,7 +161,7 @@ module.exports = Input.extend({
   downArrowClick() {
     const model = this.model;
     const step = model.get('step');
-    const value = parseInt(model.get('value'), 10);
+    const value = parseFloat(model.get('value'));
     const val = this.normalizeValue(value - step);
     var valid = this.validateInputValue(val);
     model.set('value', valid.value);
@@ -234,6 +251,8 @@ module.exports = Input.extend({
     var unit = model.get('unit') || (units.length && units[0]) || '';
     var max = model.get('max');
     var min = model.get('min');
+    var limitlessMax = !!model.get('limitlessMax');
+    var limitlessMin = !!model.get('limitlessMin');
 
     if (opt.deepCheck) {
       var fixed = model.get('fixedValues') || [];
@@ -252,13 +271,15 @@ module.exports = Input.extend({
           val = !isNaN(val) ? val : defValue;
           var uN = valCopy.replace(val, '');
           // Check if exists as unit
-          if (_.indexOf(units, uN) >= 0) unit = uN;
+          if (indexOf(units, uN) >= 0) unit = uN;
         }
       }
     }
 
-    if (!isUndefined(max) && max !== '') val = val > max ? max : val;
-    if (!isUndefined(min) && min !== '') val = val < min ? min : val;
+    if (!limitlessMax && !isUndefined(max) && max !== '')
+      val = val > max ? max : val;
+    if (!limitlessMax && !isUndefined(min) && min !== '')
+      val = val < min ? min : val;
 
     return {
       force,
